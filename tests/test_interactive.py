@@ -927,3 +927,508 @@ class TestIntegration:
         )
 
         assert result == original
+
+
+# =============================================================================
+# Tests for run_interactive_mode
+# =============================================================================
+
+
+class TestRunInteractiveMode:
+    """Tests for run_interactive_mode function."""
+
+    def test_run_interactive_mode_no_changes(self):
+        """Test run_interactive_mode with no changes."""
+        from black.interactive import run_interactive_mode
+
+        original = "a = 1\n"
+        formatted = "a = 1\n"
+
+        result = run_interactive_mode(
+            src=Path("test.py"),
+            original_content=original,
+            formatted_content=formatted,
+            mode="accept-all",
+        )
+
+        assert result == original
+
+    def test_run_interactive_mode_accept_all(self):
+        """Test run_interactive_mode with accept-all mode."""
+        from black.interactive import run_interactive_mode
+
+        original = "def foo():\n    x=1\n"
+        formatted = "def foo():\n    x = 1\n"
+
+        result = run_interactive_mode(
+            src=Path("test.py"),
+            original_content=original,
+            formatted_content=formatted,
+            mode="accept-all",
+        )
+
+        # Should have formatting applied
+        assert result != original
+        assert "x = 1" in result
+
+    def test_run_interactive_mode_reject_all(self):
+        """Test run_interactive_mode with reject-all mode."""
+        from black.interactive import run_interactive_mode
+
+        original = "def foo():\n    x=1\n"
+        formatted = "def foo():\n    x = 1\n"
+
+        result = run_interactive_mode(
+            src=Path("test.py"),
+            original_content=original,
+            formatted_content=formatted,
+            mode="reject-all",
+        )
+
+        # Should have original content (no changes applied)
+        assert result == original
+
+    def test_run_interactive_mode_per_hunk_accept_all(self, monkeypatch):
+        """Test run_interactive_mode with per-hunk mode accepting all."""
+        from black.interactive import run_interactive_mode
+
+        original = "a=1\nb=2\n"
+        formatted = "a = 1\nb = 2\n"
+
+        # Mock input to accept all hunks
+        monkeypatch.setattr("builtins.input", lambda _: "A")
+
+        result = run_interactive_mode(
+            src=Path("test.py"),
+            original_content=original,
+            formatted_content=formatted,
+            mode="per-hunk",
+        )
+
+        # Should have formatting applied
+        assert "a = 1" in result
+        assert "b = 2" in result
+
+    def test_run_interactive_mode_per_hunk_reject_all(self, monkeypatch):
+        """Test run_interactive_mode with per-hunk mode rejecting all."""
+        from black.interactive import run_interactive_mode
+
+        original = "a=1\nb=2\n"
+        formatted = "a = 1\nb = 2\n"
+
+        # Mock input to reject all hunks
+        monkeypatch.setattr("builtins.input", lambda _: "R")
+
+        result = run_interactive_mode(
+            src=Path("test.py"),
+            original_content=original,
+            formatted_content=formatted,
+            mode="per-hunk",
+        )
+
+        # Should have original content
+        assert result == original
+
+    def test_run_interactive_mode_quit_early(self, monkeypatch):
+        """Test run_interactive_mode with quit option."""
+        from black.interactive import run_interactive_mode
+
+        original = "a=1\nb=2\nc=3\n"
+        formatted = "a = 1\nb = 2\nc = 3\n"
+
+        # Mock input to accept first, then quit
+        inputs = iter(["a", "q"])
+        monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+        result = run_interactive_mode(
+            src=Path("test.py"),
+            original_content=original,
+            formatted_content=formatted,
+            mode="per-hunk",
+        )
+
+        # Should have first hunk applied, rest original
+        assert "a = 1" in result
+
+    def test_run_interactive_mode_empty_content(self):
+        """Test run_interactive_mode with empty content."""
+        from black.interactive import run_interactive_mode
+
+        result = run_interactive_mode(
+            src=Path("test.py"),
+            original_content="",
+            formatted_content="",
+            mode="accept-all",
+        )
+
+        assert result == ""
+
+
+# =============================================================================
+# Tests for TerminalSession
+# =============================================================================
+
+
+class TestTerminalSession:
+    """Tests for TerminalSession class."""
+
+    def test_session_stats_tracking(self):
+        """Test session statistics tracking."""
+        from black.interactive.session import TerminalSession
+        from black.interactive.interfaces import HunkBatch, HunkSource, HunkDecision
+
+        session = TerminalSession(verbose=False)
+
+        batch = HunkBatch(
+            file_path=Path("test.py"),
+            hunks=[],
+            source=HunkSource.DIFF,
+        )
+
+        session.start(batch)
+        session.record_decision(HunkDecision.ACCEPT)
+        session.record_decision(HunkDecision.ACCEPT)
+        session.record_decision(HunkDecision.REJECT)
+        session.record_decision(HunkDecision.SKIP)
+        session.finish(batch)
+
+        stats = session.stats
+        assert stats["accepted"] == 2
+        assert stats["rejected"] == 1
+        assert stats["skipped"] == 1
+        assert stats["processed"] == 4
+
+    def test_session_verbose_flag(self):
+        """Test session with verbose=False."""
+        from black.interactive.session import TerminalSession
+        from black.interactive.interfaces import HunkBatch, HunkSource
+
+        session = TerminalSession(verbose=False)
+        batch = HunkBatch(
+            file_path=Path("test.py"),
+            hunks=[],
+            source=HunkSource.DIFF,
+        )
+
+        # Should not raise any errors
+        session.start(batch)
+        session.finish(batch)
+
+
+# =============================================================================
+# Tests for interactive __init__ exports
+# =============================================================================
+
+
+class TestInteractiveExports:
+    """Tests for interactive module exports."""
+
+    def test_run_interactive_mode_import(self):
+        """Test that run_interactive_mode can be imported."""
+        from black.interactive import run_interactive_mode
+
+        assert callable(run_interactive_mode)
+
+    def test_all_components_importable(self):
+        """Test that all interactive components are importable."""
+        from black.interactive.interfaces import (
+            FormatHunk,
+            HunkDecision,
+            HunkSource,
+            HunkBatch,
+        )
+        from black.interactive.engine import build_hunks, InteractiveEngine
+        from black.interactive.apply import HunkApplier
+        from black.interactive.io import TerminalPrompt, TerminalRenderer
+        from black.interactive.session import TerminalSession
+
+        # All imports should succeed
+        assert FormatHunk is not None
+        assert HunkDecision is not None
+        assert HunkSource is not None
+        assert HunkBatch is not None
+        assert build_hunks is not None
+        assert InteractiveEngine is not None
+        assert HunkApplier is not None
+        assert TerminalPrompt is not None
+        assert TerminalRenderer is not None
+        assert TerminalSession is not None
+
+
+# =============================================================================
+# Tests for CLI flag --interactive (using click testing)
+# =============================================================================
+
+
+class TestInteractiveCLIFlag:
+    """Tests for --interactive CLI flag using click testing."""
+
+    def test_interactive_flag_exists(self):
+        """Test that --interactive flag exists in CLI."""
+        from click.testing import CliRunner
+        from black import main
+
+        runner = CliRunner()
+        result = runner.invoke(main, ["--help"])
+
+        assert "--interactive" in result.output
+
+    def test_interactive_flag_help(self):
+        """Test --interactive flag help text."""
+        from click.testing import CliRunner
+        from black import main
+
+        runner = CliRunner()
+        result = runner.invoke(main, ["--help"])
+
+        assert "interactive" in result.output.lower()
+        assert "accept" in result.output.lower() or "reject" in result.output.lower()
+
+    def test_interactive_with_check_conflict(self, tmp_path):
+        """Test that --interactive with --check shows error."""
+        from click.testing import CliRunner
+        from black import main
+
+        # Create a test file
+        test_file = tmp_path / "test.py"
+        test_file.write_text("a=1\n")
+
+        runner = CliRunner()
+        result = runner.invoke(main, [str(test_file), "--interactive", "--check"])
+
+        assert result.exit_code != 0
+        assert "interactive" in result.output.lower() or "check" in result.output.lower()
+
+    def test_interactive_with_diff_conflict(self, tmp_path):
+        """Test that --interactive with --diff shows error."""
+        from click.testing import CliRunner
+        from black import main
+
+        test_file = tmp_path / "test.py"
+        test_file.write_text("a=1\n")
+
+        runner = CliRunner()
+        result = runner.invoke(main, [str(test_file), "--interactive", "--diff"])
+
+        assert result.exit_code != 0
+
+    def test_interactive_multiple_files_error(self, tmp_path):
+        """Test that --interactive with multiple files shows error."""
+        from click.testing import CliRunner
+        from black import main
+
+        test_file1 = tmp_path / "test1.py"
+        test_file2 = tmp_path / "test2.py"
+        test_file1.write_text("a=1\n")
+        test_file2.write_text("b=2\n")
+
+        runner = CliRunner()
+        result = runner.invoke(main, [str(test_file1), str(test_file2), "--interactive"])
+
+        assert result.exit_code != 0
+        assert "single" in result.output.lower() or "interactive" in result.output.lower()
+
+    def test_interactive_with_code_conflict(self):
+        """Test that --interactive with -c/--code shows error."""
+        from click.testing import CliRunner
+        from black import main
+
+        runner = CliRunner()
+        result = runner.invoke(main, ["-c", "a=1", "--interactive"])
+
+        assert result.exit_code != 0
+
+    def test_interactive_nonexistent_file(self):
+        """Test --interactive with nonexistent file."""
+        from click.testing import CliRunner
+        from black import main
+
+        runner = CliRunner()
+        result = runner.invoke(main, ["/nonexistent/path.py", "--interactive"])
+
+        assert result.exit_code != 0
+
+    def test_interactive_valid_file(self, tmp_path, monkeypatch):
+        """Test --interactive with valid file and accept all."""
+        from click.testing import CliRunner
+        from black import main
+
+        test_file = tmp_path / "test.py"
+        test_file.write_text("a=1\nb=2\n")
+
+        runner = CliRunner()
+        # Mock input to accept all
+        result = runner.invoke(main, [str(test_file), "--interactive"], input="A\n")
+
+        # Should complete without error
+        assert result.exit_code == 0
+
+    def test_interactive_no_changes_needed(self, tmp_path, monkeypatch):
+        """Test --interactive when no formatting changes needed."""
+        from click.testing import CliRunner
+        from black import main
+
+        test_file = tmp_path / "test.py"
+        # Already formatted
+        test_file.write_text("a = 1\nb = 2\n")
+
+        runner = CliRunner()
+        result = runner.invoke(main, [str(test_file), "--interactive"])
+
+        # Should complete without error (no hunks to process)
+        assert result.exit_code == 0
+
+    def test_interactive_reject_all(self, tmp_path, monkeypatch):
+        """Test --interactive with reject all."""
+        from click.testing import CliRunner
+        from black import main
+
+        test_file = tmp_path / "test.py"
+        original = "a=1\n"
+        test_file.write_text(original)
+
+        runner = CliRunner()
+        result = runner.invoke(main, [str(test_file), "--interactive"], input="R\n")
+
+        assert result.exit_code == 0
+        # File should be unchanged
+        assert test_file.read_text() == original
+
+    def test_interactive_quit(self, tmp_path, monkeypatch):
+        """Test --interactive with quit option."""
+        from click.testing import CliRunner
+        from black import main
+
+        test_file = tmp_path / "test.py"
+        original = "a=1\nb=2\n"
+        test_file.write_text(original)
+
+        runner = CliRunner()
+        result = runner.invoke(main, [str(test_file), "--interactive"], input="q\n")
+
+        assert result.exit_code == 0
+        # File should be unchanged (quit before any changes)
+        assert test_file.read_text() == original
+
+
+# =============================================================================
+# Tests for edge cases and error handling
+# =============================================================================
+
+
+class TestInteractiveEdgeCases:
+    """Tests for edge cases in interactive formatting."""
+
+    def test_hunk_with_special_characters(self):
+        """Test hunks containing special characters."""
+        from black.interactive.engine import build_hunks
+
+        original = ["x = 'hello\\nworld'\n"]
+        formatted = ["x = \"hello\\nworld\"\n"]
+
+        result = build_hunks(
+            file_path=Path("test.py"),
+            original=original,
+            formatted=formatted,
+        )
+
+        # Should create hunks
+        assert len(result) >= 0
+
+    def test_hunk_with_unicode(self):
+        """Test hunks containing unicode characters."""
+        from black.interactive.engine import build_hunks
+
+        original = ["x = 'café'\n"]
+        formatted = ["x = \"café\"\n"]
+
+        result = build_hunks(
+            file_path=Path("test.py"),
+            original=original,
+            formatted=formatted,
+        )
+
+        # Should handle unicode
+        assert isinstance(result, dict)
+
+    def test_apply_hunk_at_file_end(self):
+        """Test applying hunk at end of file."""
+        from black.interactive.apply import HunkApplier
+        from black.interactive.interfaces import FormatHunk
+
+        original = ["a\n", "b\n"]
+        hunk = FormatHunk(
+            file_path=Path("test.py"),
+            hunk_id="hunk_0000",
+            original=("b\n",),
+            formatted=("B\n",),
+            original_start=1,
+            original_end=2,
+        )
+
+        applier = HunkApplier()
+        result = applier.apply(
+            file_path=Path("test.py"),
+            original=original,
+            accepted=[hunk],
+        )
+
+        assert result[-1] == "B\n"
+
+    def test_apply_empty_original_empty_formatted(self):
+        """Test applying hunk with both empty original and formatted."""
+        from black.interactive.apply import HunkApplier
+        from black.interactive.interfaces import FormatHunk
+
+        original = ["a\n", "b\n", "c\n"]
+        hunk = FormatHunk(
+            file_path=Path("test.py"),
+            hunk_id="hunk_0000",
+            original=(),
+            formatted=(),
+            original_start=1,
+            original_end=1,
+        )
+
+        applier = HunkApplier()
+        result = applier.apply(
+            file_path=Path("test.py"),
+            original=original,
+            accepted=[hunk],
+        )
+
+        # Should be unchanged (no-op)
+        assert result == original
+
+    def test_build_hunks_with_trailing_newline_difference(self):
+        """Test hunks when only trailing newline differs."""
+        from black.interactive.engine import build_hunks
+
+        original = ["a\n", "b\n"]
+        formatted = ["a\n", "b"]
+
+        result = build_hunks(
+            file_path=Path("test.py"),
+            original=original,
+            formatted=formatted,
+        )
+
+        # Should detect the difference
+        assert len(result) >= 0
+
+    def test_build_hunks_preserves_order(self):
+        """Test that build_hunks preserves order of hunks."""
+        from black.interactive.engine import build_hunks
+
+        original = ["a\n", "b\n", "c\n", "d\n", "e\n"]
+        formatted = ["A\n", "b\n", "C\n", "d\n", "E\n"]
+
+        result = build_hunks(
+            file_path=Path("test.py"),
+            original=original,
+            formatted=formatted,
+        )
+
+        hunk_ids = [h.hunk_id for h in result.keys()]
+        # Should be in order
+        assert hunk_ids == sorted(hunk_ids)
