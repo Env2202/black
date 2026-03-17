@@ -22,8 +22,8 @@ class FormatHunk:
 
     file_path: Path
     hunk_id: str
-    original: Sequence[str]
-    formatted: Sequence[str]
+    original: tuple[str, ...]
+    formatted: tuple[str, ...]
 
 
 class HunkSource(Enum):

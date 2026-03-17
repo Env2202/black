@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import difflib
+from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Iterable, Mapping, Sequence
 
 from black.interactive.interfaces import (
     FormatHunk,
@@ -67,6 +69,51 @@ def build_hunks(
     file_path: Path,
     original: Sequence[str],
     formatted: Sequence[str],
-) -> Iterable[FormatHunk]:
-    """Create hunks from original and formatted content (placeholder)."""
-    return []
+) -> Mapping[FormatHunk, Path]:
+    """Create hunks from original and formatted content.
+
+    Compares original and formatted line sequences and returns an ordered map
+    where each FormatHunk is mapped to its original file path. Hunks are ordered
+    by their appearance in the file.
+
+    Args:
+        file_path: Path to the original file.
+        original: Original content as a sequence of lines.
+        formatted: Formatted content as a sequence of lines.
+
+    Returns:
+        An OrderedDict mapping each FormatHunk to its file_path.
+    """
+    if original == formatted:
+        return OrderedDict()
+
+    # Use SequenceMatcher to find matching blocks
+    matcher = difflib.SequenceMatcher(None, list(original), list(formatted))
+
+    hunks_map: OrderedDict[FormatHunk, Path] = OrderedDict()
+    hunk_index = 0
+
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            continue
+
+        # Extract the original and formatted lines for this hunk
+        orig_lines = tuple(original[i1:i2])
+        fmt_lines = tuple(formatted[j1:j2])
+
+        # Create a unique hunk_id based on position
+        hunk_id = f"hunk_{hunk_index:04d}"
+
+        # Create the FormatHunk
+        hunk = FormatHunk(
+            file_path=file_path,
+            hunk_id=hunk_id,
+            original=orig_lines,
+            formatted=fmt_lines,
+        )
+
+        # Map hunk to file_path in order
+        hunks_map[hunk] = file_path
+        hunk_index += 1
+
+    return hunks_map
