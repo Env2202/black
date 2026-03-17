@@ -639,6 +639,10 @@ def main(
         out(main.get_usage(ctx) + "\n\nOne of 'SRC' or 'code' is required.")
         ctx.exit(1)
 
+    if interactive and code is not None:
+        out(main.get_usage(ctx) + "\n\n'--interactive' cannot be used with -c/--code.")
+        ctx.exit(1)
+
     # It doesn't do anything if --unstable is also passed, so just allow it.
     if enable_unstable_feature and not (preview or unstable):
         out(
