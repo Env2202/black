@@ -1,1 +1,1 @@
-version = "7.dev0+g97c70552f.d20260317"
+version = "7"
