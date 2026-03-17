@@ -876,8 +876,9 @@ class TestIntegration:
         from black.interactive.engine import build_hunks
         from black.interactive.apply import HunkApplier
 
-        original = ["a\n", "b\n", "c\n"]
-        formatted = ["A\n", "B\n", "C\n"]
+        # Use content with unchanged lines between changes to get separate hunks
+        original = ["a\n", "keep\n", "b\n", "keep\n", "c\n"]
+        formatted = ["A\n", "keep\n", "B\n", "keep\n", "C\n"]
 
         hunks_map = build_hunks(
             file_path=Path("test.py"),
@@ -885,6 +886,9 @@ class TestIntegration:
             formatted=formatted,
         )
         hunks = list(hunks_map.keys())
+
+        # Should have 3 hunks (for a, b, c changes)
+        assert len(hunks) == 3
 
         # Accept only first hunk
         applier = HunkApplier()
@@ -896,8 +900,10 @@ class TestIntegration:
 
         # First line should be changed, others unchanged
         assert result[0] == "A\n"
-        assert result[1] == "b\n"
-        assert result[2] == "c\n"
+        assert result[1] == "keep\n"
+        assert result[2] == "b\n"
+        assert result[3] == "keep\n"
+        assert result[4] == "c\n"
 
     def test_roundtrip_no_changes(self):
         """Test that accepting all on identical content returns same."""
