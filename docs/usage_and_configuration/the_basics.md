@@ -229,6 +229,53 @@ All done! ✨ 🍰 ✨
 1 file would be reformatted.
 ```
 
+#### `--interactive`
+
+Enable interactive mode to review and selectively apply formatting changes hunk by
+hunk. When enabled, _Black_ will:
+
+1. Format the file and identify all changes as "hunks"
+2. Display each hunk showing the original and formatted content
+3. Prompt you to accept or reject each hunk individually
+4. Only write accepted hunks back to the file
+
+**Interactive prompts:**
+
+- `[a]` / `[y]` - Accept this hunk
+- `[r]` / `[n]` - Reject this hunk
+- `[A]` - Accept all remaining hunks
+- `[R]` - Reject all remaining hunks
+- `[q]` - Quit interactive mode
+
+```console
+$ black test.py --interactive
+
+============================================================
+File: test.py
+Found 2 formatting change(s)
+============================================================
+
+Options: [a]ccept / [r]eject / [A]ccept all / [R]eject all / [q]uit
+
+------------------------------------------------------------
+Hunk 1/2: hunk_0000
+------------------------------------------------------------
+Hunk hunk_0000:
+  File: test.py
+  Position: 0-1
+  Original:
+    - x=1
+  Formatted:
+    + x = 1
+
+[a]ccept / [r]eject / [A]ll accept / [R]eject all / [q]uit: a
+```
+
+**Constraints:**
+- `--interactive` only works with a single file (not directories)
+- Cannot be used with `--check`, `--diff`, `-c/--code`, or `--line-ranges`
+- Cannot be used with stdin (`-`)
+
 #### `--no-cache`
 
 Do not consult or update Black's per-user cache during this run. When `--no-cache` is

@@ -61,6 +61,7 @@ from black.handle_ipynb_magics import (
     unmask_cell,
     validate_cell,
 )
+from black.interactive import run_interactive_mode
 from black.linegen import LN, LineGenerator, transform_line
 from black.lines import EmptyLineTracker, LinesBlock
 from black.mode import FUTURE_FLAG_TO_FEATURE, VERSION_TO_FEATURES, Feature
@@ -375,6 +376,14 @@ def validate_regex(
     ),
 )
 @click.option(
+    "--interactive",
+    is_flag=True,
+    help=(
+        "Interactive mode: show formatting hunks and let the user accept or reject"
+        " each hunk individually. Only accepted hunks will be written to the file."
+    ),
+)
+@click.option(
     "--color/--no-color",
     is_flag=True,
     help="Show (or do not show) colored diff. Only applies when --diff is given.",
@@ -577,6 +586,7 @@ def main(
     target_version: list[TargetVersion],
     check: bool,
     diff: bool,
+    interactive: bool,
     line_ranges: Sequence[str],
     color: bool,
     fast: bool,
@@ -627,6 +637,10 @@ def main(
         ctx.exit(1)
     if not src and code is None:
         out(main.get_usage(ctx) + "\n\nOne of 'SRC' or 'code' is required.")
+        ctx.exit(1)
+
+    if interactive and code is not None:
+        out(main.get_usage(ctx) + "\n\n'--interactive' cannot be used with -c/--code.")
         ctx.exit(1)
 
     # It doesn't do anything if --unstable is also passed, so just allow it.
@@ -785,31 +799,92 @@ def main(
                 sys.stdout.write(sys.stdin.read())
             ctx.exit(0)
 
-        if len(sources) == 1:
-            reformat_one(
-                src=sources.pop(),
-                fast=fast,
-                write_back=write_back,
-                mode=mode,
-                report=report,
-                lines=lines,
-                no_cache=no_cache,
-            )
-        else:
-            from black.concurrency import reformat_many
-
-            if lines:
-                err("Cannot use --line-ranges to format multiple files.")
+        # Interactive mode handling
+        if interactive:
+            # Validation for interactive mode
+            if check:
+                err("Cannot use --interactive with --check.")
                 ctx.exit(1)
-            reformat_many(
-                sources=sources,
-                fast=fast,
-                write_back=write_back,
-                mode=mode,
-                report=report,
-                workers=workers,
-                no_cache=no_cache,
-            )
+            if diff:
+                err("Cannot use --interactive with --diff.")
+                ctx.exit(1)
+            if code is not None:
+                err("Cannot use --interactive with -c/--code.")
+                ctx.exit(1)
+            if len(sources) != 1:
+                err("--interactive mode only supports a single file.")
+                ctx.exit(1)
+            if lines:
+                err("Cannot use --interactive with --line-ranges.")
+                ctx.exit(1)
+
+            # Run interactive mode for single file
+            src_file = sources.pop()
+            try:
+                original_content = src_file.read_text()
+                # Format the content
+                from black import format_file_contents, NothingChanged
+
+                try:
+                    formatted_content = format_file_contents(
+                        original_content,
+                        fast=fast,
+                        mode=mode,
+                        lines=lines,
+                    )
+                except NothingChanged:
+                    # No changes needed
+                    formatted_content = original_content
+                except Exception:
+                    # If formatting fails, use original
+                    formatted_content = original_content
+
+                # Run interactive mode
+                modified_content = run_interactive_mode(
+                    src=src_file,
+                    original_content=original_content,
+                    formatted_content=formatted_content,
+                    mode="per-hunk",
+                )
+
+                # Write back if changed
+                if modified_content != original_content:
+                    src_file.write_text(modified_content)
+                    report.done(src_file, Changed.YES)
+                    if verbose or not quiet:
+                        out(f"Reformatted {src_file}")
+                else:
+                    report.done(src_file, Changed.NO)
+            except Exception as exc:
+                if report.verbose:
+                    traceback.print_exc()
+                report.failed(src_file, str(exc))
+        else:
+            if len(sources) == 1:
+                reformat_one(
+                    src=sources.pop(),
+                    fast=fast,
+                    write_back=write_back,
+                    mode=mode,
+                    report=report,
+                    lines=lines,
+                    no_cache=no_cache,
+                )
+            else:
+                from black.concurrency import reformat_many
+
+                if lines:
+                    err("Cannot use --line-ranges to format multiple files.")
+                    ctx.exit(1)
+                reformat_many(
+                    sources=sources,
+                    fast=fast,
+                    write_back=write_back,
+                    mode=mode,
+                    report=report,
+                    workers=workers,
+                    no_cache=no_cache,
+                )
 
     if verbose or not quiet:
         if code is None and (verbose or report.change_count or report.failure_count):
