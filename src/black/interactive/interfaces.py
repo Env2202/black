@@ -24,6 +24,8 @@ class FormatHunk:
     hunk_id: str
     original: tuple[str, ...]
     formatted: tuple[str, ...]
+    original_start: int = 0  # Starting line index in original file (0-based)
+    original_end: int = 0  # Ending line index in original file (exclusive)
 
 
 class HunkSource(Enum):

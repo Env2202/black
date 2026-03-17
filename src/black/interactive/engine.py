@@ -104,12 +104,14 @@ def build_hunks(
         # Create a unique hunk_id based on position
         hunk_id = f"hunk_{hunk_index:04d}"
 
-        # Create the FormatHunk
+        # Create the FormatHunk with position info
         hunk = FormatHunk(
             file_path=file_path,
             hunk_id=hunk_id,
             original=orig_lines,
             formatted=fmt_lines,
+            original_start=i1,
+            original_end=i2,
         )
 
         # Map hunk to file_path in order
