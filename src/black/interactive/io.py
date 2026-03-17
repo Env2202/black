@@ -61,7 +61,9 @@ class TerminalPrompt:
         """Get user choice from terminal input."""
         while True:
             try:
-                choice = input("[a]ccept / [r]eject / [s]kip / [q]uit: ").strip().lower()
+                choice = (
+                    input("[a]ccept / [r]eject / [s]kip / [q]uit: ").strip().lower()
+                )
                 if choice in ("a", "accept", "y", "yes"):
                     return HunkDecision.ACCEPT
                 elif choice in ("r", "reject", "n", "no"):
