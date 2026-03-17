@@ -25,6 +25,9 @@
   `--explain-show` (all/included/ignored), `--explain-limit`, and `--explain-simulate`
   to show why each candidate path was included for formatting or ignored during file
   discovery (#XXXX)
+- Add `--interactive` flag for interactive formatting mode. Review and selectively
+  apply formatting changes hunk by hunk, with options to accept/reject individual
+  hunks, accept all, reject all, or quit. Only accepted hunks are written to the file.
 
 ### Packaging
 

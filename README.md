@@ -65,6 +65,10 @@ Use `-E` / `--explain` to see why each file was included or ignored during disco
 formatting. See the docs for full details on `--explain-format`, `--explain-show`,
 and `--explain-limit`.
 
+Use `--interactive` to review and selectively apply formatting changes hunk by hunk.
+This allows you to accept or reject each formatting change individually before writing
+to the file. See the docs for more details.
+
 _Black_ is already [successfully used](https://github.com/psf/black#used-by) by many
 projects, small and big. _Black_ has a comprehensive test suite, with efficient parallel
 tests, and our own auto formatting and parallel Continuous Integration runner. Now that
