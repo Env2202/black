@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Astrix Desktop Layout</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #120a1c;
+        --fg: #f4ecff;
+        --muted: rgba(244, 236, 255, 0.65);
+        --line: rgba(255, 255, 255, 0.1);
+        --accent: #c4a1ff;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        width: 280px;
+        padding: 14px 14px 16px;
+        font: 13px/1.45 "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+        background: radial-gradient(120% 80% at 10% 0%, #2a1740 0%, var(--bg) 55%);
+        color: var(--fg);
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-size: 14px;
+        font-weight: 650;
+        letter-spacing: 0.01em;
+      }
+      p { margin: 0; color: var(--muted); }
+      .status {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .status strong { color: #7ddea2; font-weight: 600; }
+      a {
+        display: inline-block;
+        margin-top: 12px;
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover { text-decoration: underline; }
+    </style>
+  </head>
+  <body>
+    <h1>Astrix Desktop Layout</h1>
+    <p>Widens phone-locked Astrix pages on desktop screens.</p>
+    <div class="status">
+      Status: <strong>Active</strong> on astrix.elynn.me (≥900px wide)
+    </div>
+    <a href="https://astrix.elynn.me/auth" target="_blank" rel="noreferrer">Open Astrix auth →</a>
+  </body>
+</html>
