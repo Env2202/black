@@ -1,0 +1,11 @@
+{
+  "name": "astrix-desktop-wrapper",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Desktop layout wrapper for Astrix by ELYNN",
+  "scripts": {
+    "proxy": "node proxy/server.mjs",
+    "preview": "python3 -m http.server 3850 --directory preview",
+    "sync-extension": "cp shared/desktop.css extension/desktop.css && cp shared/desktop.js extension/desktop.js"
+  }
+}

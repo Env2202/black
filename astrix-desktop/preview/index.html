@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Astrix Desktop Wrapper — Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="sky" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="brand">✦ Astrix <span>Desktop Wrapper</span></div>
+      <nav>
+        <a href="#compare">Compare</a>
+        <a href="#install">Install</a>
+        <a class="cta" href="https://astrix.elynn.me/auth" target="_blank" rel="noreferrer">Open Astrix</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="eyebrow">Phone shell → desktop composition</p>
+        <h1>Astrix</h1>
+        <p class="lede">
+          Their app locks key screens to a ~448px column. This wrapper reflows that content across a normal desktop viewport.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="#install">Get the wrapper</a>
+          <a class="btn ghost" href="#compare">See the difference</a>
+        </div>
+      </section>
+
+      <section id="compare" class="compare">
+        <h2>Before / after on <code>/auth</code></h2>
+        <p class="section-copy">Same Astrix content — different layout rules.</p>
+
+        <div class="stage">
+          <article class="panel before">
+            <header><span class="tag">Before</span> Phone column on desktop</header>
+            <div class="phone-frame" aria-label="Phone-sized Astrix auth mock">
+              <div class="phone-inner">
+                <div class="logo">✨ Astrix by ELYNN</div>
+                <h3>Your cosmic reading is ready ✨</h3>
+                <p>Create a free account to see your personalized insights</p>
+                <button type="button" class="social">Continue with Google</button>
+                <button type="button" class="social">Continue with Apple</button>
+                <div class="or"><span>OR</span></div>
+                <input type="email" placeholder="Email address" disabled />
+                <input type="password" placeholder="Create a password" disabled />
+                <button type="button" class="primary-btn">Sign up with Email</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel after">
+            <header><span class="tag good">After</span> Desktop split layout</header>
+            <div class="desk-frame" aria-label="Desktop Astrix auth mock">
+              <aside class="brand-pane">
+                <div class="mark">✦ Astrix by ELYNN</div>
+                <h3>Your cosmic reading is ready ✨</h3>
+                <p>Create a free account to see your personalized insights</p>
+              </aside>
+              <div class="form-pane">
+                <button type="button" class="social">Continue with Google</button>
+                <button type="button" class="social">Continue with Apple</button>
+                <div class="or"><span>OR</span></div>
+                <input type="email" placeholder="Email address" disabled />
+                <input type="password" placeholder="Create a password" disabled />
+                <button type="button" class="primary-btn">Sign up with Email</button>
+                <p class="fine">Already have an account? Sign in</p>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="install" class="install">
+        <h2>Install</h2>
+        <p class="section-copy">Three ways to run the reformatter against the live Astrix site.</p>
+
+        <div class="cards">
+          <article>
+            <h3>1. Chrome / Edge extension</h3>
+            <ol>
+              <li>Open <code>chrome://extensions</code></li>
+              <li>Enable Developer mode</li>
+              <li>Load unpacked → select <code>astrix-desktop/extension</code></li>
+              <li>Visit <a href="https://astrix.elynn.me/auth" target="_blank" rel="noreferrer">astrix.elynn.me/auth</a></li>
+            </ol>
+          </article>
+          <article>
+            <h3>2. Tampermonkey userscript</h3>
+            <ol>
+              <li>Install Tampermonkey (or Violentmonkey)</li>
+              <li>Add <code>userscript/astrix-desktop.user.js</code></li>
+              <li>Reload Astrix — desktop mode activates ≥900px</li>
+            </ol>
+          </article>
+          <article>
+            <h3>3. Local proxy</h3>
+            <ol>
+              <li><code>cd astrix-desktop/proxy && node server.mjs</code></li>
+              <li>Open <code>http://127.0.0.1:3847/auth</code></li>
+              <li>HTML is proxied with the desktop CSS/JS injected</li>
+            </ol>
+          </article>
+        </div>
+      </section>
+
+      <section class="notes">
+        <h2>What it changes</h2>
+        <ul>
+          <li><strong>/auth</strong> — split brand + form instead of a centered phone card</li>
+          <li><strong>/intro, /onboarding, /paywall…</strong> — wider readable column (~720–880px)</li>
+          <li><strong>/home, /chat, /profile</strong> — expands max-width shells; floats the bottom nav as a compact pill</li>
+        </ul>
+        <p>
+          This does not scrape private data or replace Astrix — it only restyles and lightly rearranges their existing DOM for desktop viewports.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <p>Unofficial layout wrapper for <a href="https://astrix.elynn.me/" target="_blank" rel="noreferrer">Astrix by ELYNN</a>.</p>
+    </footer>
+
+    <script>
+      // Light entrance motion
+      const els = document.querySelectorAll(".hero, .panel, .cards article, .notes");
+      const io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e) => {
+            if (e.isIntersecting) e.target.classList.add("in");
+          });
+        },
+        { threshold: 0.12 }
+      );
+      els.forEach((el) => io.observe(el));
+    </script>
+  </body>
+</html>
